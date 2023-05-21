@@ -1,81 +1,100 @@
 (function () {
-'use strict';
 
-  // Define the modeule and controller
-  angular.module('foodChecker',[])
-  .controller('outputController', outputController)
-  .filter('custom', FilterCustomized);
+  'use strict';
 
-  // Inject dependencies using array notation
-  outputController.$inject = ['$scope','$filter','customFilter'];
+  angular.module('ShoppingListApp', [])
+    .controller('ToBuyController', ToBuyController)
+    .controller('AlreadyBoughtController', AlreadyBoughtController)
+    .service('ShoppingListCheckOffService', ShoppingListCheckOffService)
+    // .provider('ShoppingList', ShoppingListProvider);
 
-  // Define controller function
-  function outputController($scope,$filter,customFilter){
-    var a = this;
-    var f = $filter;
-    var cf = customFilter;
+  ToBuyController.$inject = ['ShoppingListCheckOffService'];
+  function ToBuyController(ShoppingListCheckOffService) {
+    var toBuy = this;
+    toBuy.items = ShoppingListCheckOffService.getToBuyItems();
 
-    a.otherMessage = "";
-    a.foodItems = "";
-    a.message = "";
-    a.clicked = false;
-
-    // Define checkFood function
-    a.checkFood = function(){
-
-      // Split input into array and remove empty string 
-      var foodArray = a.foodItems.split(",").filter(item => item.trim() !== "");
-      
-      if(!a.foodItems) {
-        a.message = "Please enter data first";
-        a.otherMessage = cf(a.message);
-        return a.UpperCase(a.message);
-      }
-
-      if(foodArray.length <= 3) {
-        a.message = "Enjoy";
-        a.changeColor();
-      }
-      else{
-        a.message = "To Much!";
-        a.changeColor();
-      }
-      a.otherMessage = cf(a.message);
-      
-      a.UpperCase(a.message);
-
+    toBuy.buyItem = function (index) {
+      ShoppingListCheckOffService.buyItem(index);
     };
-
-    a.UpperCase = function(messageOutput){
-        a.message = f('uppercase')(messageOutput);
-    }
-
-    a.changeColor = function(){
-      a.clicked = true;
-    };
-
-    // convert to other messsage using custom filter
-    
   }
 
-  function FilterCustomized() {
-    return function (input) {
-
-      if(input == "Enjoy"){
-        input = input.replace(input, "That's enough food")
-      }
-      else if (input == "To Much!"){
-        input = input.replace(input, "That's execive food")
-      }
-      else{
-        input = input.replace(input, "No Data input")
-      }
-
-      return input;
-    }
+  AlreadyBoughtController.$inject = ['ShoppingListCheckOffService'];
+  function AlreadyBoughtController(ShoppingListCheckOffService) {
+    var alreadyBought = this;
+    alreadyBought.items = ShoppingListCheckOffService.getAlreadyBoughtItems();
   }
+
+  function ShoppingListCheckOffService() {
+      var service = this;
+      var toBuyItems = [
+        { name: 'Cookies', quantity: 10 },
+        { name: 'Banana Catsup', quantity: 8 },
+        { name: 'Alcohol', quantity: 5 },
+        { name: 'Cola', quantity: 4 },
+        { name: 'Egg', quantity: 1 }
+      ];
+      var boughtItems = [];
+  
+      service.buyItem = function (index) {
+        var item = toBuyItems[index];
+        toBuyItems.splice(index, 1);
+        boughtItems.push(item);
+      };
+  
+      service.getToBuyItems = function () {
+        return toBuyItems;
+      };
+  
+      service.getAlreadyBoughtItems = function () {
+        return boughtItems;
+      };
+    }
+
+
+
+      // using provider
+
+  // function ShoppingListCheckOffService() {
+  //   var service = this;
+  //   var toBuyItems = [
+  //     { name: 'Cookies', quantity: 10 },
+  //     { name: 'Banana Catsup', quantity: 8 },
+  //     { name: 'Alcohol', quantity: 5 },
+  //     { name: 'Cola', quantity: 4 },
+  //     { name: 'Egg', quantity: 1 }
+  //   ];
+  //   var boughtItems = [];
+
+  //   service.buyItem = function (index) {
+  //     var item = toBuyItems[index];
+  //     toBuyItems.splice(index, 1);
+  //     boughtItems.push(item);
+  //   };
+
+  //   service.getToBuyItems = function () {
+  //     return toBuyItems;
+  //   };
+
+  //   service.getAlreadyBoughtItems = function () {
+  //     return boughtItems;
+  //   };
+  // }
+
+  // function ShoppingListProvider() {
+  //   var provider = this;
+  //   provider.defaults = {
+  //     maxItems: 3
+  //   };
+
+  //   provider.$get = function () {
+  //     var shoppingList = new ShoppingListCheckOffService();
+
+  //     shoppingList.getItemsToBuy = function () {
+  //       return shoppingList.getToBuyItems(provider.defaults.maxItems);
+  //     };
+
+  //     return shoppingList;
+  //   };
+  // }
 
 })();
-
-//CustomFilters
-//WATCHERS
