@@ -36,9 +36,11 @@
          <div class="form-group message" ng-if="ctrl.message" 
           ng-click="ctrl.changeColor()" 
           ng-class="{ 'no-data': !ctrl.foodItems && !ctrl.clicked, 'has-data': ctrl.foodItems && ctrl.clicked }">
-          {{ ctrl.message }}
+          Original : {{ ctrl.message }} <br>
+          New : {{ctrl.otherMessage}}
          </div>
 
+         
     </div>
 
 </body>
