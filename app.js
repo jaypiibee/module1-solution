@@ -2,99 +2,90 @@
 
   'use strict';
 
-  angular.module('ShoppingListApp', [])
-    .controller('ToBuyController', ToBuyController)
-    .controller('AlreadyBoughtController', AlreadyBoughtController)
-    .service('ShoppingListCheckOffService', ShoppingListCheckOffService)
-    // .provider('ShoppingList', ShoppingListProvider);
+  angular.module('NarrowItDownApp', [])
+    .controller('NarrowItDownController', NarrowItDownController)
+    .service('MenuSearchService', MenuSearchService)
+    .directive('foundItems', FoundItemsDirective)
+    .constant('ApiBasePath', 'https://coursera-jhu-default-rtdb.firebaseio.com/menu_items.json');
 
-  ToBuyController.$inject = ['ShoppingListCheckOffService'];
-  function ToBuyController(ShoppingListCheckOffService) {
-    var toBuy = this;
-    toBuy.items = ShoppingListCheckOffService.getToBuyItems();
+  NarrowItDownController.$inject = ['MenuSearchService'];
+  function NarrowItDownController(MenuSearchService) {
+    var narrowCtrl = this;
+    narrowCtrl.searchTerm = '';
+    narrowCtrl.foundItems = [];
+    narrowCtrl.showNoResultsMessage = false;
 
-    toBuy.buyItem = function (index) {
-      ShoppingListCheckOffService.buyItem(index);
+    narrowCtrl.searchMenuItems = function () {
+      if (narrowCtrl.searchTerm.trim() === '') {
+        narrowCtrl.showNoResultsMessage = true;
+        narrowCtrl.foundItems = [];
+        return;
+      }
+
+      MenuSearchService.getMatchedMenuItems(narrowCtrl.searchTerm)
+        .then(function (response) {
+          narrowCtrl.foundItems = response;
+          narrowCtrl.showNoResultsMessage = narrowCtrl.foundItems.length === 0;
+        })
+        .catch(function (error) {
+          console.log('Error occurred while retrieving menu items:', error);
+          narrowCtrl.showNoResultsMessage = true;
+        });
+    };
+
+    narrowCtrl.removeItem = function (index) {
+      narrowCtrl.foundItems.splice(index, 1);
     };
   }
 
-  AlreadyBoughtController.$inject = ['ShoppingListCheckOffService'];
-  function AlreadyBoughtController(ShoppingListCheckOffService) {
-    var alreadyBought = this;
-    alreadyBought.items = ShoppingListCheckOffService.getAlreadyBoughtItems();
+
+  MenuSearchService.$inject = ['$http', 'ApiBasePath'];
+  function MenuSearchService($http, ApiBasePath) {
+    var service = this;
+
+    service.getMatchedMenuItems = function (searchTerm) {
+      return $http({
+        method: 'GET',
+        url: ApiBasePath
+      }).then(function (response) {
+        var menuItems = [];
+        for (var categoryKey in response.data) {
+          if (response.data.hasOwnProperty(categoryKey)) {
+            var category = response.data[categoryKey];
+            var items = category.menu_items.filter(function (item) {
+              return item.description.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1;
+            });
+            menuItems = menuItems.concat(items);
+          }
+        }
+        return menuItems;
+      });
+    };
   }
 
-  function ShoppingListCheckOffService() {
-      var service = this;
-      var toBuyItems = [
-        { name: 'Cookies', quantity: 10 },
-        { name: 'Banana Catsup', quantity: 8 },
-        { name: 'Alcohol', quantity: 5 },
-        { name: 'Cola', quantity: 4 },
-        { name: 'Egg', quantity: 1 }
-      ];
-      var boughtItems = [];
+
+  function FoundItemsDirective() {
+    var ddo = {
+      restrict: 'E',
+      template: '{{ item.name }}',
+      scope: {
+        items: '<',
+        onRemove: '&'
+      },
+      controller: FoundItemsDirectiveController,
+      controllerAs: 'foundCtrl',
+      bindToController: true
+    };
+    return ddo;
+  }
   
-      service.buyItem = function (index) {
-        var item = toBuyItems[index];
-        toBuyItems.splice(index, 1);
-        boughtItems.push(item);
-      };
-  
-      service.getToBuyItems = function () {
-        return toBuyItems;
-      };
-  
-      service.getAlreadyBoughtItems = function () {
-        return boughtItems;
-      };
-    }
 
+  function FoundItemsDirectiveController() {
+    var foundCtrl = this;
 
-
-      // using provider
-
-  // function ShoppingListCheckOffService() {
-  //   var service = this;
-  //   var toBuyItems = [
-  //     { name: 'Cookies', quantity: 10 },
-  //     { name: 'Banana Catsup', quantity: 8 },
-  //     { name: 'Alcohol', quantity: 5 },
-  //     { name: 'Cola', quantity: 4 },
-  //     { name: 'Egg', quantity: 1 }
-  //   ];
-  //   var boughtItems = [];
-
-  //   service.buyItem = function (index) {
-  //     var item = toBuyItems[index];
-  //     toBuyItems.splice(index, 1);
-  //     boughtItems.push(item);
-  //   };
-
-  //   service.getToBuyItems = function () {
-  //     return toBuyItems;
-  //   };
-
-  //   service.getAlreadyBoughtItems = function () {
-  //     return boughtItems;
-  //   };
-  // }
-
-  // function ShoppingListProvider() {
-  //   var provider = this;
-  //   provider.defaults = {
-  //     maxItems: 3
-  //   };
-
-  //   provider.$get = function () {
-  //     var shoppingList = new ShoppingListCheckOffService();
-
-  //     shoppingList.getItemsToBuy = function () {
-  //       return shoppingList.getToBuyItems(provider.defaults.maxItems);
-  //     };
-
-  //     return shoppingList;
-  //   };
-  // }
+    foundCtrl.isEmpty = function () {
+      return foundCtrl.items && foundCtrl.items.length === 0;
+    };
+  }
 
 })();
